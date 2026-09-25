@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lapor Mas Jod</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f2f0ee;color:#332b28}.hero{background:linear-gradient(135deg,#9e2027,#6b432d);color:white;padding:34px 18px}.wrap{max-width:900px;margin:auto}.brand{font-size:13px;font-weight:bold;letter-spacing:2px}.hero h1{font-size:44px;margin:6px 0}.hero p{margin:0;color:#f6dddd}.card{background:#fff;margin:22px auto;padding:26px;border-radius:18px;box-shadow:0 8px 25px #00000012}.badge{display:inline-block;background:#eee5e0;color:#8d2026;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:bold}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}label{display:block;font-weight:bold}label.full{grid-column:1/-1}input,select,textarea{display:block;width:100%;margin-top:7px;padding:12px;border:1px solid #cfc6c0;border-radius:10px;font:inherit}textarea{min-height:150px;resize:vertical}.help{font-size:12px;color:#777}.btn{margin-top:20px;width:100%;padding:14px;border:0;border-radius:11px;background:#9e2027;color:#fff;font-weight:bold;font-size:16px;cursor:pointer}.btn:disabled{opacity:.6}.notice{padding:13px;border-radius:10px;background:#f1ece9;margin-top:18px;font-size:13px}.success{display:none;background:#eaf5ea;border:1px solid #b6d5b6;padding:18px;border-radius:12px;margin-top:18px}.error{display:none;background:#fdeaea;border:1px solid #e0aaaa;padding:14px;border-radius:12px;margin-top:18px}footer{text-align:center;background:#302622;color:#eee;padding:25px;font-size:13px}@media(max-width:650px){.grid{grid-template-columns:1fr}.hero h1{font-size:35px}.card{padding:19px}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+<div class="brand">SMA N 1 KARANGANOM</div><h1>Lapor Mas Jod</h1>
+<p>Wadah aspirasi siswa untuk sekolah yang lebih baik.</p>
+</div></header>
+<main class="wrap">
+<section class="card">
+<span class="badge">FORM ASPIRASI</span>
+<h2>Sampaikan aspirasi atau keluhan</h2>
+<p>Gunakan formulir ini untuk menyampaikan hal terkait KBM, sarana & prasarana, atau lingkungan sekolah.</p>
+<form id="form">
+<div class="grid">
+<label>Kelas *<select id="kelas" required><option value="">Pilih kelas</option><option>X</option><option>XI</option><option>XII</option></select></label>
+<label>Nama <span class="help">(opsional)</span><input id="nama" maxlength="80" placeholder="Boleh dikosongkan"></label>
+<label>Kategori *<select id="kategori" required><option value="">Pilih kategori</option><option>KBM</option><option>Sarana & Prasarana</option><option>Lingkungan</option></select></label>
+<label class="full">Hal yang dikeluhkan *<textarea id="keluhan" maxlength="3000" required placeholder="Tuliskan secara jelas aspirasi atau keluhan kamu..."></textarea><span class="help"><span id="counter">0</span>/3000 karakter</span></label>
+<label class="full">Bukti hal yang dikeluhkan <span class="help">(opsional, gambar maksimal 5 MB)</span><input id="bukti" type="file" accept="image/*"></label>
+</div>
+<div class="notice"><b>Privasi:</b> Nama tidak wajib diisi. Laporan akan dikirim ke Google Sheets sekolah dan bukti foto ke Google Drive yang terhubung dengan sistem.</div>
+<button class="btn" id="submit" type="submit">Kirim Laporan</button>
+</form>
+<div class="success" id="success"><b>Laporan berhasil dikirim!</b><br>Nomor laporan: <strong id="reportId"></strong><br>Terima kasih telah menyampaikan aspirasi.</div>
+<div class="error" id="error"></div>
+</section>
+</main>
+<footer>Lapor Mas Jod · SMA N 1 Karanganom</footer>
+<script>
+const WEB_APP_URL="https://script.google.com/macros/s/AKfycbxKIqrDmjgZ9I79ThcsnENHPEydt3wobZopGkpzdzz7z_7O95e78gFdK4dQ2TsjPm3zZA/exec";
+const form=document.getElementById("form"), file=document.getElementById("bukti");
+document.getElementById("keluhan").addEventListener("input",e=>document.getElementById("counter").textContent=e.target.value.length);
+function id(){let d=new Date();return "LMJ-"+d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"-"+Math.random().toString(36).slice(2,7).toUpperCase()}
+form.addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(WEB_APP_URL.includes("PASTE_URL")){alert("URL Google Apps Script belum dipasang. Buka index.html dan isi WEB_APP_URL.");return}
+ if(file.files[0] && file.files[0].size>5*1024*1024){alert("Ukuran bukti maksimal 5 MB.");return}
+ const btn=document.getElementById("submit"),err=document.getElementById("error");
+ btn.disabled=true;btn.textContent="Mengirim...";
+ err.style.display="none";
+ const f=file.files[0];
+ let base64="",mime="";
+ if(f){base64=await new Promise((res,rej)=>{let r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(f)});mime=f.type}
+ const payload={id:id(),kelas:kelas.value,nama:nama.value.trim(),kategori:kategori.value,keluhan:keluhan.value.trim(),fileName:f?f.name:"",mimeType:mime,fileBase64:base64};
+ try{
+  const r=await fetch(WEB_APP_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+  const data=await r.json();
+  if(!data.ok) throw new Error(data.message||"Gagal mengirim laporan.");
+  form.reset();document.getElementById("counter").textContent="0";
+  document.getElementById("reportId").textContent=data.id;
+  document.getElementById("success").style.display="block";
+ }catch(ex){err.textContent=ex.message||"Terjadi kesalahan. Coba lagi.";err.style.display="block"}
+ finally{btn.disabled=false;btn.textContent="Kirim Laporan"}
+});
+</script>
+</body>
+</html>
